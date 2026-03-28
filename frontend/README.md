@@ -245,29 +245,6 @@ This demo uses a hardcoded test private key.
 
 ---
 
-# Project Purpose
-
-This project is designed as a simple, reproducible demonstration of NFT-based IP registration.
-
-It emphasizes:
-
-* clarity
-* ease of setup
-* functionality
-
----
-
-# Demo Mode vs Real dApp
-
-| Feature    | Demo Mode | Real dApp |
-| ---------- | --------- | --------- |
-| Wallet     | Local key | MetaMask  |
-| Multi-user | No        | Yes       |
-| Security   | No        | Yes       |
-| Setup      | Easy      | Moderate  |
-
----
-
 # Author
 
 tsukilogic
