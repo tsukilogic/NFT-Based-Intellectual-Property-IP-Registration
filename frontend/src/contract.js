@@ -76,12 +76,14 @@ function getBrowserProvider() {
 }
 
 export async function getReadContract() {
-  const provider = getBrowserProvider();
+  const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
   return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 }
 
 export async function getWriteContract() {
   const provider = getBrowserProvider();
   const signer = await provider.getSigner();
+  console.log("Using write contract address:", CONTRACT_ADDRESS);
+  console.log("Signer:", await signer.getAddress());
   return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 }

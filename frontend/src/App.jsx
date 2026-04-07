@@ -4,16 +4,16 @@ import {
   getCurrentAccount,
   ensureHardhatNetwork,
   getReadContract,
-  getWriteContract,
+  getWriteContract
 } from "./contract";
 import { hashFile } from "./hashFile";
+import { uploadFileToPinata, uploadMetadataToPinata } from "./ipfs";
 
 export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [activeAccount, setActiveAccount] = useState("");
   const [registerFile, setRegisterFile] = useState(null);
   const [verifyFile, setVerifyFile] = useState(null);
-  const [metadataURI, setMetadataURI] = useState("");
   const [registerResult, setRegisterResult] = useState(null);
   const [verifyResult, setVerifyResult] = useState(null);
   const [myTokens, setMyTokens] = useState([]);
@@ -26,7 +26,9 @@ export default function App() {
   const loadGlobalStats = useCallback(async () => {
     try {
       const contract = await getReadContract();
+      console.log("read contract target:", contract.target);
       const total = await contract.totalRegistered();
+      console.log("totalRegistered ok:", total.toString());
       setTotalRegistered(total.toString());
     } catch (err) {
       console.error("Failed to load stats:", err);
@@ -163,11 +165,6 @@ export default function App() {
       return;
     }
 
-    if (!metadataURI.trim()) {
-      setStatus("Enter a metadata URI first.");
-      return;
-    }
-
     try {
       setLoading(true);
       setRegisterResult(null);
@@ -175,12 +172,48 @@ export default function App() {
 
       await ensureHardhatNetwork();
 
-      const contract = await getWriteContract();
       const fileHash = await hashFile(registerFile);
 
+      setStatus("Uploading file to IPFS via Pinata...");
+      const uploadedFile = await uploadFileToPinata(registerFile);
+
+      setStatus("Generating metadata...");
+      const metadata = {
+        name: registerFile.name,
+        description: "IP Registration NFT",
+        fileName: registerFile.name,
+        fileType: registerFile.type || "unknown",
+        fileHash,
+        fileCid: uploadedFile.cid,
+        fileIpfsUri: uploadedFile.ipfsUri,
+        owner: activeAccount,
+        createdAt: new Date().toISOString(),
+    };
+
+      setStatus("Uploading metadata to IPFS...");
+      const uploadedMetadata = await uploadMetadataToPinata(metadata);
+
+      console.log("fileHash:", fileHash);
+      console.log("uploadedFile:", uploadedFile);
+      console.log("metadata:", metadata);
+      console.log("uploadedMetadata:", uploadedMetadata);
+      console.log("metadata ipfsUri:", uploadedMetadata?.ipfsUri);
+
+      if (!uploadedMetadata?.ipfsUri || !uploadedMetadata.ipfsUri.startsWith("ipfs://")) {
+        throw new Error("Metadata upload did not return a valid ipfsUri.");
+      }
+
+      setStatus("Checking transaction...");
+      const contract = await getWriteContract();
+      console.log("Write contract:", contract);
+
+      const signer = await contract.runner?.getAddress?.();
+      console.log("Signer address:", signer);
+
+      await contract.registerIP.staticCall(fileHash, uploadedMetadata.ipfsUri);
+
       setStatus("Waiting for MetaMask confirmation...");
-      const tx = await contract.registerIP(fileHash, metadataURI.trim());
-      setStatus("Transaction sent. Waiting for confirmation...");
+      const tx = await contract.registerIP(fileHash, uploadedMetadata.ipfsUri);
 
       const receipt = await tx.wait();
 
@@ -351,14 +384,6 @@ export default function App() {
       <h2>Register IP</h2>
       <input type="file" onChange={(e) => setRegisterFile(e.target.files?.[0] || null)} />
       <br /><br />
-
-      <input
-        type="text"
-        placeholder="Metadata URI (example: ipfs://your-metadata-cid)"
-        value={metadataURI}
-        onChange={(e) => setMetadataURI(e.target.value)}
-        style={{ width: "100%", padding: "10px", marginBottom: "12px", boxSizing: "border-box" }}
-      />
 
       <button type="button" onClick={handleRegister} disabled={loading || !activeAccount}>
         {loading ? "Processing..." : "Register File"}
