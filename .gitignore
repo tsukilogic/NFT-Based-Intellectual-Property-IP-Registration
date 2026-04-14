@@ -22,26 +22,30 @@
 # dependencies
 /node_modules
 
-# build outputs
-/dist
-/bundle
-/artifacts
-/cache
-/types
-/coverage
+# dependencies
+node_modules/
+**/node_modules/
 
 # env files
 .env
 .env.*
 !.env.example
 
-# logs
+# build/cache
+dist/
+artifacts/
+cache/
+coverage/
+bundle/
+types/
+
+# OS/logs
+.DS_Store
+Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Ignore documentation files
-frontend/*.md
+# ignore workflow docs
+frontend/CHECKLIST.md
+frontend/SETUP.md
+frontend/TASKS.md
