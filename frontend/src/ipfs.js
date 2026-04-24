@@ -1,6 +1,11 @@
 export async function uploadFileToPinata(file) {
-  const res = await fetch("http://localhost:3001/api/pinata/file-url");
-  const { url } = await res.json();
+  const fileType = encodeURIComponent(file?.type || "");
+  const res = await fetch(`http://localhost:3001/api/pinata/file-url?fileType=${fileType}`);
+  const signedUrlJson = await res.json();
+  if (!res.ok) {
+    throw new Error(signedUrlJson.error || "Failed to create signed upload URL");
+  }
+  const { url } = signedUrlJson;
 
   const formData = new FormData();
   formData.append("file", file);
@@ -11,6 +16,9 @@ export async function uploadFileToPinata(file) {
   });
 
   const json = await upload.json();
+  if (!upload.ok) {
+    throw new Error(json.error || "Failed to upload file to Pinata");
+  }
 
   return {
     cid: json.data.cid,
@@ -27,5 +35,10 @@ export async function uploadMetadataToPinata(metadata) {
     body: JSON.stringify(metadata),
   });
 
-  return res.json();
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json.error || "Failed to upload metadata");
+  }
+
+  return json;
 }
