@@ -409,6 +409,7 @@ export default function App() {
       updateProgress("Preparing registration...");
       await ensureSepoliaNetwork();
       const fileHash = await hashFile(registerFile);
+      console.log("Computed client-side Keccak-256 hash:", fileHash);
       updateProgress("Checking for duplicates...");
       const readContract = await getReadContract();
       const existing = await readContract.verifyIP(fileHash);
